@@ -30,11 +30,14 @@ jobs:
       
       - name: Generate Delta
         run: |
+          FROM_COMMIT=$(git rev-parse HEAD^)
+          TO_COMMIT=$(git rev-parse HEAD)
+
           mkdir -p delta
 
           sf sgd source delta \
-            --from "HEAD~1" \
-            --to "HEAD" \
+            --from "$FROM_COMMIT" \
+            --to "$TO_COMMIT" \
             --output-dir delta \
             --generate-delta
 
