@@ -22,7 +22,8 @@ jobs:
           npm install --global @salesforce/cli
 
       - name: Install Git Delta Plugin
-        run: sf plugins install sfdx-git-delta --force
+        run: |
+          echo "y" | sf plugins install sfdx-git-delta --force
       
       - name: Verify Install Git Delta Plugin
         run: sf plugins
