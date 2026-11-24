@@ -30,10 +30,20 @@ jobs:
       
       - name: Generate Delta
         run: |
-          FROM_COMMIT=$(git rev-parse HEAD^)
+          mkdir -p delta
+
           TO_COMMIT=$(git rev-parse HEAD)
 
-          mkdir -p delta
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            FROM_COMMIT=$(git rev-parse HEAD^)
+          else
+            echo "No parent commit found."
+            echo "This is the first commit. Delta generation skipped."
+            exit 0
+          fi
+
+          echo "FROM: $FROM_COMMIT"
+          echo "TO: $TO_COMMIT"
 
           sf sgd source delta \
             --from "$FROM_COMMIT" \
