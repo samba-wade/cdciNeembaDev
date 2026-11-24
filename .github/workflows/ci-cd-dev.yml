@@ -21,6 +21,21 @@ jobs:
         run: |
           npm install --global @salesforce/cli
 
+      - name: Install Git Delta Plugin
+        run: sf plugins install sfdx-git-delta
+      
+      - name: Generate Delta
+        run: |
+          sf sgd source delta \
+            --from "HEAD~1" \
+            --to "HEAD" \
+            --output-dir delta \
+            --generate-delta
+
+      - name: Display Delta
+        run: |
+          cat delta/package/package.xml
+
       - name: Configure JWT key
         env:
           SF_JWT_KEY: ${{ secrets.SF_JWT_KEY_DEV }}
@@ -41,9 +56,18 @@ jobs:
             --instance-url "$SF_INSTANCE_URL" \
             --alias target-org
 
-      - name: Deploy Metadata
+#      - name: Deploy Metadata
+#        run: |
+#          sf project deploy start \
+#            --target-org target-org \
+#            --source-dir force-app \
+#            --wait 30
+
+      - name: Deploy Delta
         run: |
-          sf project deploy start \
-            --target-org target-org \
-            --source-dir force-app \
-            --wait 30
+          if [ -f delta/package/package.xml ]; then
+            sf project deploy start \
+              --manifest delta/package/package.xml \
+              --target-org target-org \
+              --wait 60
+          fi
