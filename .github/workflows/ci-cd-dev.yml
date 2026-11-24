@@ -1,7 +1,13 @@
 name: Salesforce CI/CD DEV
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - devNeemba
+
+  push:
+    branches:
+      - devNeemba
 
 jobs:
   deploy:
