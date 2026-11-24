@@ -30,6 +30,8 @@ jobs:
       
       - name: Generate Delta
         run: |
+          mkdir -p delta
+
           sf sgd source delta \
             --from "HEAD~1" \
             --to "HEAD" \
@@ -38,6 +40,10 @@ jobs:
 
       - name: Display Delta
         run: |
+          echo "Generated metadata:"
+          find delta -type f
+
+          echo "Package XML:"
           cat delta/package/package.xml
 
       - name: Configure JWT key
