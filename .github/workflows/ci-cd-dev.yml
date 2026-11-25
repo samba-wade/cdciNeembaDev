@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install Salesforce CLI
         run: |
@@ -94,8 +96,12 @@ jobs:
       - name: Deploy Delta
         run: |
           if [ -f delta/package/package.xml ]; then
+            echo "Starting Salesforce deployment..."
             sf project deploy start \
               --manifest delta/package/package.xml \
               --target-org target-org \
               --wait 60
+          else
+            echo "WARNING: No package.xml found."
+            echo "No Salesforce deployment will be executed."
           fi
