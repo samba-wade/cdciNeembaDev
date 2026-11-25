@@ -1,0 +1,101 @@
+name: Salesforce CI/CD DEV
+
+on:
+  pull_request:
+    branches:
+      - devNeemba
+
+  push:
+    branches:
+      - devNeemba
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install --global @salesforce/cli
+
+      - name: Install Git Delta Plugin
+        run: |
+          echo "y" | sf plugins install sfdx-git-delta --force
+      
+      - name: Verify Install Git Delta Plugin
+        run: sf plugins
+      
+      - name: Generate Delta
+        run: |
+          mkdir -p delta
+
+          TO_COMMIT=$(git rev-parse HEAD)
+
+          if git rev-parse HEAD^ >/dev/null 2>&1; then
+            FROM_COMMIT=$(git rev-parse HEAD^)
+          else
+            echo "No parent commit found."
+            echo "This is the first commit. Delta generation skipped."
+            exit 0
+          fi
+
+          echo "FROM: $FROM_COMMIT"
+          echo "TO: $TO_COMMIT"
+
+          sf sgd source delta \
+            --from "$FROM_COMMIT" \
+            --to "$TO_COMMIT" \
+            --output-dir delta \
+            --generate-delta
+
+      - name: Display Delta
+        run: |
+          echo "Generated files:"
+
+          find delta -type f || true
+
+          if [ -f delta/package/package.xml ]; then
+            echo "Package XML:"
+            cat delta/package/package.xml
+          else
+            echo "No metadata changes detected or package.xml was not generated."
+          fi
+
+      - name: Configure JWT key
+        env:
+          SF_JWT_KEY: ${{ secrets.SF_JWT_KEY_DEV }}
+        run: |
+          printf '%s' "$SF_JWT_KEY" > server.key
+          chmod 600 server.key
+
+      - name: Authenticate Salesforce
+        env:
+          SF_CLIENT_ID: ${{ secrets.SF_CUSTOMER_KEY_DEV }}
+          SF_USERNAME: ${{ secrets.SF_USERNAME_DEV }}
+          SF_INSTANCE_URL: ${{ secrets.SF_INSTANCE_URL_DEV }}
+        run: |
+          sf org login jwt \
+            --client-id "$SF_CLIENT_ID" \
+            --username "$SF_USERNAME" \
+            --jwt-key-file server.key \
+            --instance-url "$SF_INSTANCE_URL" \
+            --alias target-org
+
+#      - name: Deploy Metadata
+#        run: |
+#          sf project deploy start \
+#            --target-org target-org \
+#            --source-dir force-app \
+#            --wait 30
+
+      - name: Deploy Delta
+        run: |
+          if [ -f delta/package/package.xml ]; then
+            sf project deploy start \
+              --manifest delta/package/package.xml \
+              --target-org target-org \
+              --wait 60
+          fi
