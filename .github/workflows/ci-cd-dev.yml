@@ -97,8 +97,8 @@ jobs:
         run: |
           if [ -f delta/package/package.xml ]; then
             echo "Starting Salesforce deployment..."
-            sf project deploy \
-              --ignore-conflicts start \
+            sf project deploy start \
+              --ignore-conflicts \
               --manifest delta/package/package.xml \
               --target-org target-org \
               --wait 60
